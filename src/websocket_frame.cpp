@@ -423,18 +423,18 @@ bool frame::validate_basic_header() const {
 }
 
 void frame::generate_masking_key() {
-	//throw "masking key generation not implimented";
+	throw "masking key generation not implimented";
 	
-	int32_t key = m_gen();
+	//int32_t key = m_gen();
 	
-	std::cout << "genkey: " << key << std::endl;
+	//std::cout << "genkey: " << key << std::endl;
 	
 	//m_masking_key[0] = reinterpret_cast<char*>(&key)[0];
 	//m_masking_key[1] = reinterpret_cast<char*>(&key)[1];
 	//m_masking_key[2] = reinterpret_cast<char*>(&key)[2];
 	//m_masking_key[3] = reinterpret_cast<char*>(&key)[3];
 	
-	*(reinterpret_cast<int32_t *>(&m_header[get_header_len()-4])) = key;
+	//*(reinterpret_cast<int32_t *>(&m_header[get_header_len()-4])) = key;
 	
 	//std::cout << "maskkey: " << m_masking_key << std::endl;
 	
