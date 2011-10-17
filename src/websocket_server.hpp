@@ -95,12 +95,6 @@ class server : public boost::enable_shared_from_this<server> {
 		void start_accept();
 		
 		// INTERFACE FOR LOCAL APPLICATIONS
-
-		// Add or remove a host string (host:port) to the list of acceptable 
-		// hosts to accept websocket connections from. Additions/deletions here 
-		// only affect new connections.
-		void add_host(std::string host);
-		void remove_host(std::string host);
 		
 		void set_max_message_size(uint64_t val);
 		
@@ -115,9 +109,6 @@ class server : public boost::enable_shared_from_this<server> {
 		void unset_alog_level(uint16_t level);
 
 		// INTERFACE FOR SESSIONS
-
-		// Check if this server will respond to this host.
-		bool validate_host(std::string host);
 		
 		// Check if message size is within server's acceptable parameters
 		bool validate_message_size(uint64_t val);
@@ -135,7 +126,6 @@ class server : public boost::enable_shared_from_this<server> {
 		uint16_t					m_elog_level;
 		uint16_t					m_alog_level;
 
-		std::set<std::string>		m_hosts;
 		uint64_t					m_max_message_size;
 		boost::asio::io_service&	m_io_service;
 		tcp::acceptor				m_acceptor;

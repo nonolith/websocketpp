@@ -44,15 +44,6 @@ server::server(boost::asio::io_service& io_service,
 	  m_acceptor(io_service, endpoint), 
 	  m_def_con_handler(defc) {}
 
-void server::add_host(std::string host) {
-	m_hosts.insert(host);
-}
-
-void server::remove_host(std::string host) {
-	m_hosts.erase(host);
-}
-
-
 void server::set_max_message_size(uint64_t val) {
 	if (val > frame::PAYLOAD_64BIT_LIMIT) {
 		std::stringstream err;
@@ -102,13 +93,6 @@ void server::unset_alog_level(uint16_t level) {
 	access_log(msg.str(),ALOG_INFO);
 
 	m_alog_level &= ~level;
-}
-
-bool server::validate_host(std::string host) {
-	if (m_hosts.find(host) == m_hosts.end()) {
-		return false;
-	}
-	return true;
 }
 
 bool server::validate_message_size(uint64_t val) {

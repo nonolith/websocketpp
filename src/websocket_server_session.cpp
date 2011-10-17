@@ -172,9 +172,6 @@ void server_session::handle_read_handshake(const boost::system::error_code& e,
 		h = get_client_header("Host");
 		if (h == "") {
 			throw(handshake_error("Required Host header is missing",400));
-		} else if (!m_server->validate_host(h)) {
-			err << "Host " << h << " is not one of this server's names.";
-			throw(handshake_error(err.str(),400));
 		}
 		
 		h = get_client_header("Upgrade");
