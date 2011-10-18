@@ -98,6 +98,9 @@ public:
 	
 	tcp::socket& socket();
 	boost::asio::io_service& io_service();
+
+	virtual void start_websocket() = 0;
+	virtual void start_http(int http_code = 200, const std::string& http_body = "") = 0;
 	
 	/*** SERVER INTERFACE ***/
 	
@@ -150,6 +153,7 @@ public:
 	virtual void handle_write_handshake(const boost::system::error_code& e) = 0;
 	virtual void handle_read_handshake(const boost::system::error_code& e,
 	                                   std::size_t bytes_transferred) = 0;
+	virtual void handle_write_http_response(const boost::system::error_code& error) = 0;
 protected:
 	virtual void write_handshake() = 0;
 	virtual void read_handshake() = 0;
@@ -217,6 +221,7 @@ protected:
 	std::vector<std::string>	m_server_extensions;
 	uint16_t					m_server_http_code;
 	std::string					m_server_http_string;
+	std::string					m_server_http_body;
 
 	// Mutable connection state;
 	status_code				m_status;

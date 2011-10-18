@@ -144,7 +144,49 @@ void server_session::handle_read_handshake(const boost::system::error_code& e,
 			}
 		}
 	}
+
+	if (m_local_interface) {
+		m_local_interface->on_client_connect(shared_from_this());
+	}else{
+		start_websocket();
+	}
+}
+
+void server_session::start_http(int http_code, const std::string& http_body){
+	m_server_http_code = http_code;
+	m_server_http_string = "";
+	m_server_http_body = http_body;
+
+	process_response_headers();
+
+	boost::array<boost::asio::const_buffer, 2> data = {
+		boost::asio::buffer(m_raw_server_handshake),
+		boost::asio::buffer(m_server_http_body),
+	};
 	
+	// start async write to handle_write_http_response
+	boost::asio::async_write(
+		m_socket,
+		data,
+		boost::bind(
+			&session::handle_write_http_response,
+			shared_from_this(),
+			boost::asio::placeholders::error
+		)
+	);
+	
+}
+
+void server_session::handle_write_http_response(const boost::system::error_code& error) {
+	if (error) {
+		handle_error("Error writing handshake response",error);
+		return;
+	}
+	
+	log_open_result();
+}
+
+void server_session::start_websocket(){
 	// handshake error checking
 	try {
 		std::stringstream err;
@@ -160,7 +202,7 @@ void server_session::handle_read_handshake(const boost::system::error_code& e,
 		
 		// check the HTTP version
 		// TODO: allow versions greater than 1.1
-		end = m_client_http_request.find(" HTTP/1.1",4);
+		std::string::size_type end = m_client_http_request.find(" HTTP/1.1",4);
 		if (end == std::string::npos) {
 			err << "Websocket handshake has invalid HTTP version";
 			throw(handshake_error(err.str(),400));
@@ -243,10 +285,6 @@ void server_session::handle_read_handshake(const boost::system::error_code& e,
 }
 
 void server_session::write_handshake() {
-	std::stringstream h;
-	
-	
-	
 	if (m_server_http_code == 101) {
 		std::string server_key = get_client_header("Sec-WebSocket-Key");
 		server_key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -278,6 +316,23 @@ void server_session::write_handshake() {
 		}
 	}
 	
+	process_response_headers();
+
+	// start async write to handle_write_handshake
+	boost::asio::async_write(
+		m_socket,
+		boost::asio::buffer(m_raw_server_handshake),
+		boost::bind(
+			&session::handle_write_handshake,
+			shared_from_this(),
+			boost::asio::placeholders::error
+		)
+	);
+}
+
+void server_session::process_response_headers(){
+	std::stringstream h;
+
 	// hardcoded server headers
 	set_header("Server","WebSocket++/2011-09-25");
 
@@ -294,17 +349,6 @@ void server_session::write_handshake() {
 	h << "\r\n";
 	
 	m_raw_server_handshake = h.str();
-
-	// start async write to handle_write_handshake
-	boost::asio::async_write(
-		m_socket,
-		boost::asio::buffer(m_raw_server_handshake),
-		boost::bind(
-			&session::handle_write_handshake,
-			shared_from_this(),
-			boost::asio::placeholders::error
-		)
-	);
 }
 
 void server_session::handle_write_handshake(const boost::system::error_code& error) {

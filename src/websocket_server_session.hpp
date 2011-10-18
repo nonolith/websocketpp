@@ -75,8 +75,16 @@ public:
 	
 	/*** HANDSHAKE INTERFACE ***/
 	
+	// Call this from your on_client_connect handler to initialize this
+	// connection as websocket and perform the websocket handshake
+	void start_websocket();
+
 	// Set an HTTP header for the outgoing server handshake response.
 	void set_header(const std::string& key, const std::string& val);
+
+	// Call this from your on_client_connect handler to initialize this
+	// connection as HTTP and send the HTTP headers (set with set_header)
+	void start_http(int http_code = 200, const std::string& http_body = "");
 	
 	// Selects a subprotocol for the connection to use. val must be a value
 	// present in the client's opening handshake or the empty string for null.
@@ -100,8 +108,8 @@ protected:
 	virtual void read_handshake();
 	virtual void handle_read_handshake(const boost::system::error_code& e,
 	                                   std::size_t bytes_transferred);
-	
-	
+	void process_response_headers();
+	virtual void handle_write_http_response(const boost::system::error_code& error);
 private:	
 	
 protected:

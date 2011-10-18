@@ -44,6 +44,11 @@ namespace websocketpp {
 
 class connection_handler {
 public:
+	// Called with a client once the connection is established and headers have
+	// been read.  Call client->websocket_start() to try to initialize this
+	// connection as websocket, or client->http_start() to send a HTTP response.
+	virtual void on_client_connect(session_ptr client) = 0;
+
 	// validate will be called after a websocket handshake has been received and
 	// before it is accepted. It provides a handler the ability to refuse a 
 	// connection based on application specific logic (ex: restrict domains or
@@ -54,7 +59,7 @@ public:
 	//  http_error_code - numeric HTTP error code to return to the client
 	//  http_error_msg - (optional) string HTTP error code to return to the
 	//    client (useful for returning non-standard error codes)
-	virtual void validate(session_ptr client) = 0;
+	virtual void validate(session_ptr client) {};
 	
 	
 
@@ -62,7 +67,6 @@ public:
 	// writing messages. client may be a new websocket session or an existing
 	// session that was recently passed to this handler.
 	virtual void on_open(session_ptr client) = 0;
-	
 
 	// this will be called when the connected websocket is no longer avaliable
 	// for writing messages. This occurs under the following conditions:
