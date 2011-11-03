@@ -101,6 +101,9 @@ public:
 
 	virtual void start_websocket() = 0;
 	virtual void start_http(int http_code = 200, const std::string& http_body = "") = 0;
+
+	// Set an HTTP header for the outgoing server handshake response.
+	virtual void set_header(const std::string& key, const std::string& val) = 0;
 	
 	/*** SERVER INTERFACE ***/
 	
@@ -207,6 +210,8 @@ protected:
 	std::string					m_raw_client_handshake;
 	std::string					m_client_http_request;
 	std::string					m_resource;
+	std::string					m_http_method;
+	std::string					m_http_version;
 	std::string					m_client_origin;
 	header_list					m_client_headers;
 	std::vector<std::string>	m_client_subprotocols;

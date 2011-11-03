@@ -145,6 +145,18 @@ void server_session::handle_read_handshake(const boost::system::error_code& e,
 		}
 	}
 
+	start = 0;
+	end = m_client_http_request.find(" ", start);
+	m_http_method = m_client_http_request.substr(start, end-start);
+	start = end+1;
+
+	end = m_client_http_request.find(" ", start);
+	m_resource = m_client_http_request.substr(start, end-start);
+	start = end+1;
+
+	end = m_client_http_request.find(" ", start);
+	m_http_version = m_client_http_request.substr(start, end-start);
+
 	if (m_local_interface) {
 		m_local_interface->on_client_connect(shared_from_this());
 	}else{
@@ -193,22 +205,17 @@ void server_session::start_websocket(){
 		std::string h;
 		
 		// check the method
-		if (m_client_http_request.substr(0,4) != "GET ") {
+		if (m_http_method != "GET") {
 			err << "Websocket handshake has invalid method: "
-				<< m_client_http_request.substr(0,4);
+				<< m_http_method;
 			
 			throw(handshake_error(err.str(),400));
 		}
 		
-		// check the HTTP version
-		// TODO: allow versions greater than 1.1
-		std::string::size_type end = m_client_http_request.find(" HTTP/1.1",4);
-		if (end == std::string::npos) {
+		if (m_http_version != "HTTP/1.1") {
 			err << "Websocket handshake has invalid HTTP version";
 			throw(handshake_error(err.str(),400));
 		}
-		
-		m_resource = m_client_http_request.substr(4,end-4);
 		
 		// verify the presence of required headers
 		h = get_client_header("Host");
