@@ -87,7 +87,7 @@ public:
 	static const uint8_t BASIC_PAYLOAD_16BIT_CODE = 0x7E; // 126
 	static const uint16_t PAYLOAD_16BIT_LIMIT = 0xFFFF; // 2^16, 65535 
 	static const uint8_t BASIC_PAYLOAD_64BIT_CODE = 0x7F; // 127
-	static const uint64_t PAYLOAD_64BIT_LIMIT = 0x7FFFFFFFFFFFFFFF; // 2^63
+	static const uint64_t PAYLOAD_64BIT_LIMIT = 0x7FFFFFFFFFFFFFFFLL; // 2^63
 	
 	static const unsigned int BASIC_HEADER_LENGTH = 2;		
 	static const unsigned int MAX_HEADER_LENGTH = 14;
