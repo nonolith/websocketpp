@@ -87,6 +87,9 @@ public:
 	// connection as HTTP and send the HTTP headers (set with set_header)
 	void start_http(int http_code = 200, const std::string& http_body = "");
 	
+	// Asynchronously get the body of a POST request
+	void read_http_post_body(boost::function<void(std::string)> callback);
+	
 	// Selects a subprotocol for the connection to use. val must be a value
 	// present in the client's opening handshake or the empty string for null.
 	void select_subprotocol(const std::string& val);
@@ -111,6 +114,8 @@ protected:
 	                                   std::size_t bytes_transferred);
 	void process_response_headers();
 	virtual void handle_write_http_response(const boost::system::error_code& error);
+	virtual void handle_read_http_post_body(const boost::system::error_code& e,
+	                 std::size_t bytes_transferred, boost::function<void(std::string)> callback);
 private:	
 	
 protected:

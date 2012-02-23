@@ -94,6 +94,10 @@ const std::string& session::get_origin() const {
 	return m_client_origin;
 }
 
+const std::string& session::get_method() const {
+	return m_http_method;
+}
+
 std::string session::get_client_header(const std::string& key) const {
 	return get_header(key,m_client_headers);
 }

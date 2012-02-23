@@ -34,12 +34,15 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 
 
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <ext/algorithm>
+using __gnu_cxx::copy_n;
 
 using websocketpp::server_session;
 
@@ -117,9 +120,13 @@ void server_session::read_handshake() {
 
 void server_session::handle_read_handshake(const boost::system::error_code& e,
 	                                       std::size_t bytes_transferred) {
-	std::ostringstream line;
-	line << &m_buf;
-	m_raw_client_handshake += line.str();
+	
+	// It takes 4 lines to get data from a "buffer" to a string because
+	// Boost devs think excessively specific types are cool.
+	m_buf.commit(bytes_transferred);
+	std::istream istr( &m_buf );
+	m_raw_client_handshake.reserve(bytes_transferred);
+	copy_n(std::istreambuf_iterator<char>(istr), bytes_transferred, std::back_inserter(m_raw_client_handshake));
 	
 	access_log(m_raw_client_handshake,ALOG_HANDSHAKE);
 	
@@ -209,6 +216,42 @@ void server_session::handle_write_http_response(const boost::system::error_code&
 	}
 	
 	log_open_result();
+}
+
+void server_session::read_http_post_body(boost::function<void(std::string)> callback){
+	int length = boost::lexical_cast<int>(get_client_header("Content-Length"));
+	
+	// The async_read_until for the headers can read past the delimeter. See how
+	// much data is already in the buffer and adjust the requested read size.
+	length -= boost::asio::buffer_size(m_buf.data());
+	
+	if (length <= 0){
+		// If it's already all read, just call the callback
+		boost::system::error_code e;
+		handle_read_http_post_body(e, 0, callback);
+		return;
+	}
+	
+	boost::asio::async_read(
+		m_socket,
+		m_buf,
+		boost::asio::transfer_at_least(length),
+		boost::bind(
+			&session::handle_read_http_post_body,
+			shared_from_this(),
+			boost::asio::placeholders::error,
+			boost::asio::placeholders::bytes_transferred,
+			callback
+		)
+	);
+}
+
+void server_session::handle_read_http_post_body(const boost::system::error_code& e,
+	                                       std::size_t bytes_transferred, boost::function<void(std::string)> callback){
+	                                       
+	std::ostringstream d;
+	d << &m_buf;
+	callback(d.str());
 }
 
 void server_session::start_websocket(){

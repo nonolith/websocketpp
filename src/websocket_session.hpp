@@ -76,6 +76,7 @@
 #define WEBSOCKET_SESSION_HPP
 
 #include <boost/asio.hpp>
+#include <boost/function.hpp>
 #include <boost/bind.hpp>
 
 #include <boost/shared_ptr.hpp>
@@ -146,6 +147,7 @@ public:
 
 	virtual void start_websocket() = 0;
 	virtual void start_http(int http_code = 200, const std::string& http_body = "") = 0;
+	virtual void read_http_post_body(boost::function<void(std::string)> callback) = 0;
 
 	// Set an HTTP header for the outgoing server handshake response.
 	virtual void set_header(const std::string& key, const std::string& val) = 0;
@@ -176,6 +178,7 @@ public:
 	// or the empty string if no subprotocol was requested.
 	const std::string& get_subprotocol() const;
 	const std::string& get_resource() const;
+	const std::string& get_method() const;
 	const std::string& get_origin() const;
 	std::string get_client_header(const std::string& key) const;
 	std::string get_server_header(const std::string& key) const;
@@ -201,6 +204,8 @@ public:
 	virtual void handle_read_handshake(const boost::system::error_code& e,
 	                                   std::size_t bytes_transferred) = 0;
 	virtual void handle_write_http_response(const boost::system::error_code& error) = 0;
+	virtual void handle_read_http_post_body(const boost::system::error_code& e,
+	                 std::size_t bytes_transferred, boost::function<void(std::string)> callback) = 0;
 public: //protected:
 	virtual void write_handshake() = 0;
 	virtual void read_handshake() = 0;
