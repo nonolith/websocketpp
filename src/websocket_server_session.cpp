@@ -121,9 +121,6 @@ void server_session::read_handshake() {
 void server_session::handle_read_handshake(const boost::system::error_code& e,
 	                                       std::size_t bytes_transferred) {
 	
-	// It takes 4 lines to get data from a "buffer" to a string because
-	// Boost devs think excessively specific types are cool.
-	m_buf.commit(bytes_transferred);
 	std::istream istr( &m_buf );
 	m_raw_client_handshake.reserve(bytes_transferred);
 	copy_n(std::istreambuf_iterator<char>(istr), bytes_transferred, std::back_inserter(m_raw_client_handshake));
