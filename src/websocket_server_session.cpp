@@ -179,16 +179,17 @@ void server_session::handle_read_handshake(const boost::system::error_code& e,
 	}
 }
 
-void server_session::start_http(int http_code, const std::string& http_body){
+void server_session::start_http(int http_code, const std::string& http_body, bool done){
 	m_server_http_code = http_code;
 	m_server_http_string = "";
-	m_server_http_body = http_body;
-
+	
 	process_response_headers();
 
+	std::string *buf = new std::string(http_body);
+	
 	boost::array<boost::asio::const_buffer, 2> data = {
 		boost::asio::buffer(m_raw_server_handshake),
-		boost::asio::buffer(m_server_http_body),
+		boost::asio::buffer(*buf),
 	};
 	
 	// start async write to handle_write_http_response
@@ -198,21 +199,63 @@ void server_session::start_http(int http_code, const std::string& http_body){
 		boost::bind(
 			&session::handle_write_http_response,
 			shared_from_this(),
-			boost::asio::placeholders::error
+			boost::asio::placeholders::error,
+			buf,
+			false
 		)
 	);
 
 	m_timer.cancel();
 	
+	if (!done){
+		m_state = STATE_OPEN;
+	
+		boost::asio::async_read(
+			m_socket,
+			m_buf,
+			boost::bind(
+				&session::handle_http_read_for_eof,
+				shared_from_this(),
+				boost::asio::placeholders::error
+			)
+		);
+	}
 }
 
-void server_session::handle_write_http_response(const boost::system::error_code& error) {
+void server_session::handle_http_read_for_eof(const boost::system::error_code& e){
+	// Assume this is an error because you're not supposed to write anything else
+	std::cerr << "HTTP closed" << std::endl;
+	m_state = STATE_CLOSED;
+	
+	m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
+}
+
+void server_session::http_write(const std::string& body, bool done){
+	std::string *buf = new std::string(body);
+
+	boost::asio::async_write(
+		m_socket,
+		boost::asio::buffer(*buf),
+		boost::bind(
+			&session::handle_write_http_response,
+			shared_from_this(),
+			boost::asio::placeholders::error,
+			buf,
+			done
+		)
+	);
+}
+
+void server_session::handle_write_http_response(const boost::system::error_code& error, std::string* buf, bool done){
+	delete buf;
 	if (error) {
-		log("Error writing handshake response",LOG_ERROR);
+		log("Error writing HTTP response ",LOG_ERROR);
 		return;
 	}
-	
-	log_open_result();
+
+	if (done){
+		m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
+	}
 }
 
 void server_session::read_http_post_body(boost::function<void(std::string)> callback){

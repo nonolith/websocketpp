@@ -146,8 +146,10 @@ public:
 	boost::asio::io_service& io_service();
 
 	virtual void start_websocket() = 0;
-	virtual void start_http(int http_code = 200, const std::string& http_body = "") = 0;
+	virtual void start_http(int http_code = 200, const std::string& http_body = "", bool done=true) = 0;
 	virtual void read_http_post_body(boost::function<void(std::string)> callback) = 0;
+	virtual void http_write(const std::string& body, bool done=false) = 0;
+	bool is_closed(){return m_state == STATE_CLOSED;}
 
 	// Set an HTTP header for the outgoing server handshake response.
 	virtual void set_header(const std::string& key, const std::string& val) = 0;
@@ -203,9 +205,10 @@ public:
 	virtual void handle_write_handshake(const boost::system::error_code& e) = 0;
 	virtual void handle_read_handshake(const boost::system::error_code& e,
 	                                   std::size_t bytes_transferred) = 0;
-	virtual void handle_write_http_response(const boost::system::error_code& error) = 0;
+	virtual void handle_write_http_response(const boost::system::error_code& error, std::string*, bool done) = 0;
 	virtual void handle_read_http_post_body(const boost::system::error_code& e,
 	                 std::size_t bytes_transferred, boost::function<void(std::string)> callback) = 0;
+	virtual void handle_http_read_for_eof(const boost::system::error_code& e) = 0;
 public: //protected:
 	virtual void write_handshake() = 0;
 	virtual void read_handshake() = 0;

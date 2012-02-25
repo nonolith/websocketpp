@@ -85,7 +85,8 @@ public:
 
 	// Call this from your on_client_connect handler to initialize this
 	// connection as HTTP and send the HTTP headers (set with set_header)
-	void start_http(int http_code = 200, const std::string& http_body = "");
+	void start_http(int http_code = 200, const std::string& http_body = "", bool done=true);
+	virtual void http_write(const std::string& body, bool done=false);
 	
 	// Asynchronously get the body of a POST request
 	void read_http_post_body(boost::function<void(std::string)> callback);
@@ -113,9 +114,10 @@ protected:
 	virtual void handle_read_handshake(const boost::system::error_code& e,
 	                                   std::size_t bytes_transferred);
 	void process_response_headers();
-	virtual void handle_write_http_response(const boost::system::error_code& error);
+	virtual void handle_write_http_response(const boost::system::error_code& error, std::string* buf, bool done);
 	virtual void handle_read_http_post_body(const boost::system::error_code& e,
 	                 std::size_t bytes_transferred, boost::function<void(std::string)> callback);
+	virtual void handle_http_read_for_eof(const boost::system::error_code& e);
 private:	
 	
 protected:
