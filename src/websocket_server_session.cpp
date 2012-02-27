@@ -226,8 +226,6 @@ void server_session::handle_http_read_for_eof(const boost::system::error_code& e
 	// Assume this is an error because you're not supposed to write anything else
 	std::cerr << "HTTP closed" << std::endl;
 	m_state = STATE_CLOSED;
-	
-	m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
 }
 
 void server_session::http_write(const std::string& body, bool done){
