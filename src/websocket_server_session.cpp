@@ -224,7 +224,6 @@ void server_session::start_http(int http_code, const std::string& http_body, boo
 
 void server_session::handle_http_read_for_eof(const boost::system::error_code& e){
 	// Assume this is an error because you're not supposed to write anything else
-	std::cerr << "HTTP closed" << std::endl;
 	m_state = STATE_CLOSED;
 }
 
