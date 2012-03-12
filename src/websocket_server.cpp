@@ -37,6 +37,10 @@
 
 using websocketpp::server;
 
+#ifdef _WIN32
+typedef boost::asio::detail::socket_option::integer<SOL_SOCKET, SO_EXCLUSIVEADDRUSE> win_exclusive;
+#endif
+
 server::server(boost::asio::io_service& io_service, 
 			   const tcp::endpoint& endpoint,
 			   websocketpp::connection_handler_ptr defc)
@@ -44,7 +48,7 @@ server::server(boost::asio::io_service& io_service,
 	  m_alog_level(ALOG_CONTROL),
 	  m_max_message_size(DEFAULT_MAX_MESSAGE_SIZE),
 	  m_io_service(io_service), 
-	  m_acceptor(io_service, endpoint), 
+	  m_acceptor(io_service), 
 	  m_def_con_handler(defc)
 #ifdef USE_PROGRAM_OPTIONS
 	  ,m_desc("websocketpp::server") {
@@ -55,7 +59,13 @@ server::server(boost::asio::io_service& io_service,
 	;
 #else
 	{
-#endif	  
+#endif
+	m_acceptor.open(endpoint.protocol());
+	#ifdef _WIN32
+	m_acceptor.set_option(win_exclusive(true));
+	#endif
+	m_acceptor.bind(endpoint);
+	m_acceptor.listen(); 
 }
 
 void server::parse_command_line(int ac, char* av[]) {
