@@ -63,6 +63,8 @@ server::server(boost::asio::io_service& io_service,
 	m_acceptor.open(endpoint.protocol());
 	#ifdef _WIN32
 	m_acceptor.set_option(win_exclusive(true));
+	#else
+	m_acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
 	#endif
 	m_acceptor.bind(endpoint);
 	m_acceptor.listen(); 
