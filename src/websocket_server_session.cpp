@@ -185,25 +185,7 @@ void server_session::start_http(int http_code, const std::string& http_body, boo
 	
 	process_response_headers();
 
-	std::string *buf = new std::string(http_body);
-	
-	boost::array<boost::asio::const_buffer, 2> data = {
-		boost::asio::buffer(m_raw_server_handshake),
-		boost::asio::buffer(*buf),
-	};
-	
-	// start async write to handle_write_http_response
-	boost::asio::async_write(
-		m_socket,
-		data,
-		boost::bind(
-			&session::handle_write_http_response,
-			shared_from_this(),
-			boost::asio::placeholders::error,
-			buf,
-			false
-		)
-	);
+	http_write(m_raw_server_handshake + http_body);
 
 	m_timer.cancel();
 	
@@ -228,30 +210,48 @@ void server_session::handle_http_read_for_eof(const boost::system::error_code& e
 }
 
 void server_session::http_write(const std::string& body, bool done){
-	std::string *buf = new std::string(body);
 
-	boost::asio::async_write(
-		m_socket,
-		boost::asio::buffer(*buf),
-		boost::bind(
-			&session::handle_write_http_response,
-			shared_from_this(),
-			boost::asio::placeholders::error,
-			buf,
-			done
-		)
-	);
+	if (!m_pending_send_data){
+		m_pending_send_data = boost::shared_ptr<std::vector<unsigned char> >(new std::vector<unsigned char>());
+	}
+
+	m_pending_send_data->reserve(m_pending_send_data->size() + body.size());
+	m_pending_send_data->insert(m_pending_send_data->end(), body.begin(), body.end());
+
+	http_write_async_send();
 }
 
-void server_session::handle_write_http_response(const boost::system::error_code& error, std::string* buf, bool done){
-	delete buf;
+void server_session::http_write_async_send(){
+	if (!m_writing && m_pending_send_data){
+		m_writing = true;
+		
+		boost::asio::async_write(
+			m_socket,
+			boost::asio::buffer(*m_pending_send_data),
+			boost::bind(
+				&session::handle_write_frame,
+				shared_from_this(),
+				boost::asio::placeholders::error,
+				m_pending_send_data
+			)
+		);
+
+		m_pending_send_data.reset();
+	}
+}
+
+void server_session::handle_write_http_response(const boost::system::error_code& error, boost::shared_ptr<std::vector<unsigned char> > buf, bool done){
 	if (error) {
 		log("Error writing HTTP response ",LOG_ERROR);
 		return;
 	}
 
+	m_writing = false;
+
 	if (done){
 		m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
+	}else{
+		http_write_async_send();
 	}
 }
 

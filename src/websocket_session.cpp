@@ -411,7 +411,7 @@ void session::process_frame () {
 	m_read_frame.reset();
 }
 
-void session::handle_write_frame (const boost::system::error_code& error) {
+void session::handle_write_frame (const boost::system::error_code& error, boost::shared_ptr<std::vector<unsigned char> > data) {
 	if (error) {
 		log_error("Error writing frame data",error);
 		drop_tcp(false);
@@ -419,6 +419,8 @@ void session::handle_write_frame (const boost::system::error_code& error) {
 	
 	access_log("handle_write_frame complete",ALOG_FRAME);
 	m_writing = false;
+
+	write_frame_async_send();
 }
 
 
@@ -641,32 +643,42 @@ void session::write_frame() {
 	}
 	
 	m_write_frame.process_payload();
-	
-	std::vector<boost::asio::mutable_buffer> data;
-	
-	data.push_back(
-		boost::asio::buffer(
-			m_write_frame.get_header(),
-			m_write_frame.get_header_len()
-		)
-	);
-	data.push_back(
-		boost::asio::buffer(m_write_frame.get_payload())
-	);
+
+	std::vector<unsigned char>& payload = m_write_frame.get_payload();
+	const char* header = m_write_frame.get_header();
+
+	if (!m_pending_send_data){
+		m_pending_send_data = boost::shared_ptr<std::vector<unsigned char> >(new std::vector<unsigned char>());
+	}
+
+	m_pending_send_data->reserve(m_pending_send_data->size() + m_write_frame.get_header_len() + payload.size());
+
+	m_pending_send_data->insert(m_pending_send_data->end(), header, header + m_write_frame.get_header_len());
+	m_pending_send_data->insert(m_pending_send_data->end(), payload.begin(), payload.end());
 	
 	log("Write Frame: "+m_write_frame.print_frame(),LOG_DEBUG);
-	
-	m_writing = true;
-	
-	boost::asio::async_write(
-		m_socket,
-		data,
-		boost::bind(
-			&session::handle_write_frame,
-			shared_from_this(),
-			boost::asio::placeholders::error
-		)
-	);
+
+	write_frame_async_send();
+}
+
+
+void session::write_frame_async_send(){
+	if (!m_writing && m_pending_send_data){
+		m_writing = true;
+		
+		boost::asio::async_write(
+			m_socket,
+			boost::asio::buffer(*m_pending_send_data),
+			boost::bind(
+				&session::handle_write_frame,
+				shared_from_this(),
+				boost::asio::placeholders::error,
+				m_pending_send_data
+			)
+		);
+
+		m_pending_send_data.reset();
+	}
 }
 
 void session::reset_message() {
