@@ -88,7 +88,9 @@ public:
 	void start_http(int http_code = 200, const std::string& http_body = "", bool done=true);
 	virtual void http_write(const std::string& body, bool done=false);
 	virtual void http_write_async_send();
-	
+	bool m_http_done;
+
+
 	// Asynchronously get the body of a POST request
 	void read_http_post_body(boost::function<void(std::string)> callback);
 	
@@ -115,7 +117,7 @@ protected:
 	virtual void handle_read_handshake(const boost::system::error_code& e,
 	                                   std::size_t bytes_transferred);
 	void process_response_headers();
-	virtual void handle_write_http_response(const boost::system::error_code& error, boost::shared_ptr<std::vector<unsigned char> > buf, bool done);
+	virtual void handle_write_http_response(const boost::system::error_code& error, boost::shared_ptr<std::vector<unsigned char> > buf);
 	virtual void handle_read_http_post_body(const boost::system::error_code& e,
 	                 std::size_t bytes_transferred, boost::function<void(std::string)> callback);
 	virtual void handle_http_read_for_eof(const boost::system::error_code& e);

@@ -185,7 +185,7 @@ void server_session::start_http(int http_code, const std::string& http_body, boo
 	
 	process_response_headers();
 
-	http_write(m_raw_server_handshake + http_body);
+	http_write(m_raw_server_handshake + http_body, done);
 
 	m_timer.cancel();
 	
@@ -218,18 +218,21 @@ void server_session::http_write(const std::string& body, bool done){
 	m_pending_send_data->reserve(m_pending_send_data->size() + body.size());
 	m_pending_send_data->insert(m_pending_send_data->end(), body.begin(), body.end());
 
+	m_http_done = done;
 	http_write_async_send();
 }
 
 void server_session::http_write_async_send(){
-	if (!m_writing && m_pending_send_data){
+	if (m_writing) return; // will be handled on next call
+
+	if (m_pending_send_data){
 		m_writing = true;
 		
 		boost::asio::async_write(
 			m_socket,
 			boost::asio::buffer(*m_pending_send_data),
 			boost::bind(
-				&session::handle_write_frame,
+				&session::handle_write_http_response,
 				shared_from_this(),
 				boost::asio::placeholders::error,
 				m_pending_send_data
@@ -237,22 +240,19 @@ void server_session::http_write_async_send(){
 		);
 
 		m_pending_send_data.reset();
+	}else if(m_http_done){
+		m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
 	}
 }
 
-void server_session::handle_write_http_response(const boost::system::error_code& error, boost::shared_ptr<std::vector<unsigned char> > buf, bool done){
+void server_session::handle_write_http_response(const boost::system::error_code& error, boost::shared_ptr<std::vector<unsigned char> > buf){
 	if (error) {
 		log("Error writing HTTP response ",LOG_ERROR);
 		return;
 	}
 
 	m_writing = false;
-
-	if (done){
-		m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
-	}else{
-		http_write_async_send();
-	}
+	http_write_async_send();
 }
 
 void server_session::read_http_post_body(boost::function<void(std::string)> callback){

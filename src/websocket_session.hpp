@@ -206,7 +206,7 @@ public:
 	virtual void handle_write_handshake(const boost::system::error_code& e) = 0;
 	virtual void handle_read_handshake(const boost::system::error_code& e,
 	                                   std::size_t bytes_transferred) = 0;
-	virtual void handle_write_http_response(const boost::system::error_code& error, boost::shared_ptr<std::vector<unsigned char> >, bool done) = 0;
+	virtual void handle_write_http_response(const boost::system::error_code& error, boost::shared_ptr<std::vector<unsigned char> >) = 0;
 	virtual void handle_read_http_post_body(const boost::system::error_code& e,
 	                 std::size_t bytes_transferred, boost::function<void(std::string)> callback) = 0;
 	virtual void handle_http_read_for_eof(const boost::system::error_code& e) = 0;
