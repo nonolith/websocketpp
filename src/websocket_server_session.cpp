@@ -50,7 +50,7 @@ server_session::server_session(websocketpp::server_ptr s,
                                boost::asio::io_service& io_service,
                                websocketpp::connection_handler_ptr defc,
 							   uint64_t buf_size)
-	: session(io_service,defc,buf_size),m_server(s) {}
+	: session(io_service,defc,buf_size),m_server(s),m_http_done(false) {}
 
 void server_session::on_connect() {
 	read_handshake();
