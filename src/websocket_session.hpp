@@ -96,6 +96,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <deque>
 
 namespace websocketpp {
 	class session;
@@ -206,7 +207,7 @@ public:
 	virtual void handle_write_handshake(const boost::system::error_code& e) = 0;
 	virtual void handle_read_handshake(const boost::system::error_code& e,
 	                                   std::size_t bytes_transferred) = 0;
-	virtual void handle_write_http_response(const boost::system::error_code& error, boost::shared_ptr<std::vector<unsigned char> >) = 0;
+	virtual void handle_write_http_response(const boost::system::error_code& error) = 0;
 	virtual void handle_read_http_post_body(const boost::system::error_code& e,
 	                 std::size_t bytes_transferred, boost::function<void(std::string)> callback) = 0;
 	virtual void handle_http_read_for_eof(const boost::system::error_code& e) = 0;
@@ -220,7 +221,7 @@ public: //protected:
 	// write m_write_frame out to the socket.
 	void write_frame();
 	void write_frame_async_send();
-	void handle_write_frame (const boost::system::error_code& error, boost::shared_ptr<std::vector<unsigned char> > data);
+	void handle_write_frame (const boost::system::error_code& error);
 	
 	void handle_timer_expired(const boost::system::error_code& error);
 	void handle_handshake_expired(const boost::system::error_code& error);
@@ -290,7 +291,7 @@ protected:
 	// Mutable connection state;
 	uint8_t						m_state;
 	bool						m_writing;
-	boost::shared_ptr<std::vector<unsigned char> > m_pending_send_data;
+	std::deque<boost::shared_ptr<std::vector<unsigned char> > > m_pending_send_data;
 
 	// Close state
 	uint16_t					m_local_close_code;

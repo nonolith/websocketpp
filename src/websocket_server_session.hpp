@@ -117,7 +117,7 @@ protected:
 	virtual void handle_read_handshake(const boost::system::error_code& e,
 	                                   std::size_t bytes_transferred);
 	void process_response_headers();
-	virtual void handle_write_http_response(const boost::system::error_code& error, boost::shared_ptr<std::vector<unsigned char> > buf);
+	virtual void handle_write_http_response(const boost::system::error_code& error);
 	virtual void handle_read_http_post_body(const boost::system::error_code& e,
 	                 std::size_t bytes_transferred, boost::function<void(std::string)> callback);
 	virtual void handle_http_read_for_eof(const boost::system::error_code& e);
